@@ -65,6 +65,9 @@ typedef enum {
     FS_16_G         =   0x18
 } accelFullScaleRange;
 
+// NOTE: The gyro sensitivities are 131, 65.5, 32.8 and 16.4. Since enum doesn't accept float, they are 
+// simply multiplied by 10 and then later divided by 10.0 (as a silly hack).. There are better ways to 
+// implement this
 typedef enum {
     SEN_250_DEG_S   =   1310,
     SEN_500_DEG_S   =   655,
