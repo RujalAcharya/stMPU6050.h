@@ -55,8 +55,7 @@ void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val);
 /* Function Definitiona */
 
 void initMPU(I2C_HandleTypeDef *hi2c) {
-    uint8_t data = 0x00;
-    HAL_I2C_Mem_Write(hi2c, MPU_I2C_ADDR << 1, POWER_MGMT_ADDR, 1, &data, 1, 50);     // Wakeup MPU6050
+    HAL_I2C_Mem_Write(hi2c, MPU_I2C_ADDR << 1, POWER_MGMT_ADDR, 1, 0x00, 1, 50);     // Wakeup MPU6050
 }
 
 void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val) {
