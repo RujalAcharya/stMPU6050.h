@@ -52,6 +52,7 @@ void initMPU(I2C_HandleTypeDef *hi2c); // Initialize MPU for use
 void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val);
 void readRawGyroVal(I2C_HandleTypeDef *hi2c, uint16_t *gyro_val);
 void readScaledAcclerVal(I2C_HandleTypeDef *hi2c, float *accler_val);
+void readScaledGyroVal(I2C_HandleTypeDef *hi2c, float *gyro_val);
 
 /* Function Definitiona */
 
@@ -97,6 +98,14 @@ void readScaledAcclerVal(I2C_HandleTypeDef *hi2c, float *accler_val){
     readRawAccelVal(hi2c,rawAccVal);
     for(int i = 0; i<3; i++){
         accler_val[i] = ((int16_t)rawAccVal[i])/16384.0;
+    }
+}
+
+void readScaledGyroVal(I2C_HandleTypeDef *hi2c, float *gyro_val){
+    uint16_t rawGyroVal[3];
+    readRawGyroVal(hi2c,rawGyroVal);
+    for(int i = 0; i<3; i++){
+        gyro_val[i] = ((int16_t)rawGyroVal[i])/131.0;
     }
 }
 
