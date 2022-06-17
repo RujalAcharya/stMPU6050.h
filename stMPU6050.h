@@ -5,6 +5,8 @@
 #ifndef __STMPU6050_H
 #define __STMPU6050_H
 
+#include <stdio.h>
+
 #include "i2c.h"
 
 // Include this line based on the STM32 Microcontroller you are using
@@ -45,17 +47,99 @@
 #define TEMP_OUT_H_ADDR     0x65
 #define TEMP_OUT_L_ADDR     0x66 
 
+/* Configuration of MPU6050 */
+
+// Set the gyro full scale to 250, 500, 1000 or 2000 deg/s
+typedef enum {
+    FS_250_DEG_S    =   0x00,
+    FS_500_DEG_S    =   0x08,
+    FS_1000_DEG_S   =   0x10,
+    FS_2000_DEG_S   =   0x18
+} gyroFullScaleRange;
+
+// Set the accelerometer full scale to 2, 4, 8 or 16 g
+typedef enum {
+    FS_2_G          =   0x00,
+    FS_4_G          =   0x08,
+    FS_8_G          =   0x10,
+    FS_16_G         =   0x18
+} accelFullScaleRange;
+
+typedef enum {
+    SEN_250_DEG_S   =   1310,
+    SEN_500_DEG_S   =   655,
+    SEN_1000_DEG_S  =   328,
+    SEN_2000_DEG_S  =   164
+} gyroLSBSensitivity;
+
+typedef enum {
+    SEN_2_G         =   16384,
+    SEN_4_G         =   8192,
+    SEN_8_G         =   4096,
+    SEN_16_G        =   2048
+} accelLSBSensitivity;
+
+typedef struct {
+    accelFullScaleRange accelFullScale;
+    gyroFullScaleRange gyroFullScale;
+    accelLSBSensitivity accelSensitivity;
+    gyroLSBSensitivity gyroSensitivity;
+} MPUConfigHandle;
+
 
 /* Function Prototypes */
 
-void initMPU(I2C_HandleTypeDef *hi2c); // Initialize MPU for use
+void initMPU(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu); // Initialize MPU for use
 void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val);
+void readRawGyroVal(I2C_HandleTypeDef *hi2c, uint16_t *gyro_val);
+void readScaledAcclerVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *accler_val);
+void readScaledGyroVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *gyro_val);
 
 
-/* Function Definitiona */
+/* Function Definitions */
 
-void initMPU(I2C_HandleTypeDef *hi2c) {
-    HAL_I2C_Mem_Write(hi2c, MPU_I2C_ADDR << 1, POWER_MGMT_ADDR, 1, 0x00, 1, 50);     // Wakeup MPU6050
+void initMPU(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu) {
+    HAL_I2C_Mem_Write(hi2c, MPU_I2C_ADDR << 1, POWER_MGMT_ADDR, 1, 0x00, 1, 50);     // Wakeup MPU6050 from sleep mode
+
+    HAL_I2C_Mem_Write(hi2c, MPU_I2C_ADDR << 1, ACCEL_CONFIG_ADDR, 1, (uint8_t) hmpu->accelFullScale, 1, 50); // Setup accelerometer full scale
+
+    // Setuo accelerometer sensitivity according to its full scale
+    switch (hmpu->accelFullScale) {
+    case FS_2_G:
+        hmpu->accelSensitivity = SEN_2_G;    
+        break;
+    case FS_4_G:
+        hmpu->accelSensitivity = SEN_4_G;    
+        break;
+    case FS_8_G:
+        hmpu->accelSensitivity = SEN_8_G;    
+        break;
+    case FS_16_G:
+        hmpu->accelSensitivity = SEN_16_G;    
+        break;
+    default:
+        break;
+    }
+
+    HAL_I2C_Mem_Write(hi2c, MPU_I2C_ADDR << 1, GYRO_CONFIG_ADDR, 1, (uint8_t) hmpu->gyroFullScale, 1, 50); // Setup gyro full scale
+
+    // Setup gyro sensitivity according to its full scale
+    switch (hmpu->gyroFullScale) {
+    case FS_250_DEG_S:
+        hmpu->gyroSensitivity = SEN_250_DEG_S;
+        break;
+    case FS_500_DEG_S:
+        hmpu->gyroSensitivity = SEN_500_DEG_S;
+        break;
+    case FS_1000_DEG_S:
+        hmpu->gyroSensitivity = SEN_1000_DEG_S;
+        break;
+    case FS_2000_DEG_S:
+        hmpu->gyroSensitivity = SEN_2000_DEG_S;
+        break;
+    default:
+        break;
+    }
 }
 
 void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val) {
@@ -74,5 +158,38 @@ void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val) {
     accel_val[2] = accel_val[2] | temp8bit;
 }
 
+void readRawGyroVal(I2C_HandleTypeDef *hi2c, uint16_t *gyro_val) {
+    uint8_t temp8bit;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_XOUT_H_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[0] = temp8bit << 8;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_XOUT_L_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[0] = gyro_val[0] | temp8bit;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_YOUT_H_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[1] = temp8bit << 8;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_YOUT_L_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[1] = gyro_val[1] | temp8bit;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_ZOUT_H_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[2] = temp8bit << 8;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_ZOUT_L_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[2] = gyro_val[2] | temp8bit;
+}
+
+void readScaledAcclerVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *accler_val){
+    uint16_t rawAccVal[3];
+    readRawAccelVal(hi2c,rawAccVal);
+    for(int i = 0; i<3; i++){
+        accler_val[i] = ((int16_t)rawAccVal[i])/(hmpu->accelSensitivity * 1.0);
+    }
+}
+
+void readScaledGyroVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *gyro_val){
+    uint16_t rawGyroVal[3];
+    readRawGyroVal(hi2c,rawGyroVal);
+    for(int i = 0; i<3; i++){
+        gyro_val[i] = ((int16_t)rawGyroVal[i])/(hmpu->gyroSensitivity / 10.0);
+    }
+}
+
 
 #endif
+ 

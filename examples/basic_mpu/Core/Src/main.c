@@ -67,6 +67,10 @@ int main(void)
   /* USER CODE BEGIN 1 */
   float accel_val[3];
   float gyro_val[3];
+  MPUConfigHandle hmpu;
+
+  hmpu.accelFullScale = FS_2_G;
+  hmpu.gyroFullScale = FS_250_DEG_S;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -89,7 +93,7 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  initMPU(&hi2c1);
+  initMPU(&hi2c1, &hmpu);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -97,9 +101,9 @@ int main(void)
   while (1)
   {
     // initMPU(&hi2c1);
-    readScaledAcclerVal(&hi2c1, accel_val);
+    readScaledAcclerVal(&hi2c1, &hmpu, accel_val);
     printf("accler:x = %f, y = %f, z = %f\n", accel_val[0], accel_val[1], accel_val[2]);
-    readScaledGyroVal(&hi2c1, gyro_val);
+    readScaledGyroVal(&hi2c1, &hmpu, gyro_val);
     printf("gyro:x = %f, y = %f, z = %f\n", gyro_val[0], gyro_val[1], gyro_val[2]);
     /* USER CODE END WHILE */
 
