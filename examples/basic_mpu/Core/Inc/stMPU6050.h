@@ -50,7 +50,7 @@
 
 void initMPU(I2C_HandleTypeDef *hi2c); // Initialize MPU for use
 void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val);
-
+void readEawGyroVal(I2C_HandleTypeDef *hi2c, uint16_t *gyro_val);
 
 /* Function Definitiona */
 
@@ -72,6 +72,22 @@ void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val) {
     accel_val[2] = temp8bit << 8;
     HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, ACCEL_ZOUT_L_ADDR, 1, &temp8bit, 1, 50);
     accel_val[2] = accel_val[2] | temp8bit;
+}
+
+void readRawGyroVal(I2C_HandleTypeDef *hi2c, uint16_t *gyro_val) {
+    uint8_t temp8bit;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_XOUT_H_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[0] = temp8bit << 8;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_XOUT_L_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[0] = gyro_val[0] | temp8bit;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_YOUT_H_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[1] = temp8bit << 8;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_YOUT_L_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[1] = gyro_val[1] | temp8bit;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_ZOUT_H_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[2] = temp8bit << 8;
+    HAL_I2C_Mem_Read(hi2c, MPU_I2C_ADDR << 1 | 0x01, GYRO_ZOUT_L_ADDR, 1, &temp8bit, 1, 50);
+    gyro_val[2] = gyro_val[2] | temp8bit;
 }
 
 
