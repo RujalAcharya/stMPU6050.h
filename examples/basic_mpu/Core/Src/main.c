@@ -65,8 +65,8 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  uint16_t accel_val[3];
-  uint16_t gyro_val[3];
+  float accel_val[3];
+  // uint16_t gyro_val[3];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -97,10 +97,8 @@ int main(void)
   while (1)
   {
     // initMPU(&hi2c1);
-    readRawAccelVal(&hi2c1, accel_val);
-    printf("accler:x = %d, y = %d, z = %d\n", accel_val[0], accel_val[1], accel_val[2]);
-    readRawAccelVal(&hi2c1, gyro_val);
-    printf("gyro:x = %d, y = %d, z = %d\n", gyro_val[0], gyro_val[1], gyro_val[2]);
+    readScaledAcclerVal(&hi2c1, accel_val);
+    printf("accler:x = %f, y = %f, z = %f\n", accel_val[0], accel_val[1], accel_val[2]);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
