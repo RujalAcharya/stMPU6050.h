@@ -67,6 +67,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
   float accel_val[3];
   float gyro_val[3];
+  double roll,pitch,yaw;
   MPUConfigHandle hmpu;
 
   hmpu.accelFullScale = FS_2_G;
@@ -103,8 +104,10 @@ int main(void)
     // initMPU(&hi2c1);
     readScaledAcclerVal(&hi2c1, &hmpu, accel_val);
     printf("accler:x = %f, y = %f, z = %f\n", accel_val[0], accel_val[1], accel_val[2]);
-    readScaledGyroVal(&hi2c1, &hmpu, gyro_val);
-    printf("gyro:x = %f, y = %f, z = %f\n", gyro_val[0], gyro_val[1], gyro_val[2]);
+    // readScaledGyroVal(&hi2c1, &hmpu, gyro_val);
+    // printf("gyro:x = %f, y = %f, z = %f\n", gyro_val[0], gyro_val[1], gyro_val[2]);
+    getAngleByAccler(&hi2c1,&hmpu,&roll,&pitch);
+    printf("roll : %.2f  pitch : %f\n",roll,pitch);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

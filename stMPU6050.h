@@ -5,10 +5,8 @@
 #ifndef __STMPU6050_H
 #define __STMPU6050_H
 
-#include <stdio.h>
-
 #include "i2c.h"
-
+#include <math.h>
 // Include this line based on the STM32 Microcontroller you are using
 #include "stm32f4xx.h"  // The Development Board being used is STM32F407-DISC
 
@@ -49,6 +47,8 @@
 
 /* Configuration of MPU6050 */
 
+#define PI 3.1415
+
 // Set the gyro full scale to 250, 500, 1000 or 2000 deg/s
 typedef enum {
     FS_250_DEG_S    =   0x00,
@@ -65,6 +65,9 @@ typedef enum {
     FS_16_G         =   0x18
 } accelFullScaleRange;
 
+// NOTE: The gyro sensitivities are 131, 65.5, 32.8 and 16.4. Since enum doesn't accept float, they are 
+// simply multiplied by 10 and then later divided by 10.0 (as a silly hack).. There are better ways to 
+// implement this
 typedef enum {
     SEN_250_DEG_S   =   1310,
     SEN_500_DEG_S   =   655,
@@ -190,6 +193,13 @@ void readScaledGyroVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *gy
     }
 }
 
+
+void getAngleByAccler(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, double *roll, double *pitch){
+    float accler_val[3];
+    readScaledAcclerVal(hi2c,hmpu,accler_val);
+    *roll = asin(accler_val[0]/sqrt(accler_val[0]*accler_val[0]+accler_val[1]*accler_val[1]+accler_val[2]*accler_val[2]))*180/PI;
+    *pitch = atan2(accler_val[2],accler_val[3])*180/PI;
+}
 
 #endif
  

@@ -5,10 +5,8 @@
 #ifndef __STMPU6050_H
 #define __STMPU6050_H
 
-#include <stdio.h>
-
 #include "i2c.h"
-
+#include <math.h>
 // Include this line based on the STM32 Microcontroller you are using
 #include "stm32f4xx.h"  // The Development Board being used is STM32F407-DISC
 
@@ -48,6 +46,8 @@
 #define TEMP_OUT_L_ADDR     0x66 
 
 /* Configuration of MPU6050 */
+
+#define PI 3.1415
 
 // Set the gyro full scale to 250, 500, 1000 or 2000 deg/s
 typedef enum {
@@ -193,6 +193,13 @@ void readScaledGyroVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *gy
     }
 }
 
+
+void getAngleByAccler(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, double *roll, double *pitch){
+    float accler_val[3];
+    readScaledAcclerVal(hi2c,hmpu,accler_val);
+    *roll = asin(accler_val[0]/sqrt(accler_val[0]*accler_val[0]+accler_val[1]*accler_val[1]+accler_val[2]*accler_val[2]))*180/PI;
+    *pitch = atan2(accler_val[2],accler_val[3])*180/PI;
+}
 
 #endif
  
