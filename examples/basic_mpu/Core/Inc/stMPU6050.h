@@ -198,7 +198,7 @@ void getAngleByAccler(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, double *ro
     float accler_val[3];
     readScaledAcclerVal(hi2c,hmpu,accler_val);
     *roll = asin(accler_val[0]/sqrt(accler_val[0]*accler_val[0]+accler_val[1]*accler_val[1]+accler_val[2]*accler_val[2]))*180/PI;
-    *pitch = atan2(accler_val[2],accler_val[3])*180/PI;
+    *pitch = atan2(accler_val[1],accler_val[2])*180/PI;
 }
 
 #endif
