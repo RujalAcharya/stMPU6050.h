@@ -82,11 +82,24 @@ typedef enum {
     SEN_16_G        =   2048
 } accelLSBSensitivity;
 
+typedef struct{
+    float elapsedTime;
+    float currentTime;
+    float previousTime;
+}time_val;
+
 typedef struct {
     accelFullScaleRange accelFullScale;
     gyroFullScaleRange gyroFullScale;
     accelLSBSensitivity accelSensitivity;
     gyroLSBSensitivity gyroSensitivity;
+    float AccErrorX;
+    float AccErrorY;
+    float AccErrorZ;
+    float GyroErrorX;
+    float GyroErrorY;
+    float GyroErrorYZ;
+    time_val time;
 } MPUConfigHandle;
 
 
@@ -97,7 +110,9 @@ void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val);
 void readRawGyroVal(I2C_HandleTypeDef *hi2c, uint16_t *gyro_val);
 void readScaledAcclerVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *accler_val);
 void readScaledGyroVal(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, float *gyro_val);
-
+void getAngleByAccler(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, double *roll, double *pitch);
+void getAngleByGyro(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, double *roll,double *pitch, double *yaw);
+void calculateImuError(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu);
 
 /* Function Definitions */
 
@@ -143,6 +158,8 @@ void initMPU(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu) {
     default:
         break;
     }
+
+    hmpu->time.currentTime = HAL_GetTick();
 }
 
 void readRawAccelVal(I2C_HandleTypeDef *hi2c, uint16_t *accel_val) {
@@ -199,6 +216,61 @@ void getAngleByAccler(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, double *ro
     readScaledAcclerVal(hi2c,hmpu,accler_val);
     *roll = asin(accler_val[0]/sqrt(accler_val[0]*accler_val[0]+accler_val[1]*accler_val[1]+accler_val[2]*accler_val[2]))*180/PI;
     *pitch = atan2(accler_val[1],accler_val[2])*180/PI;
+}
+
+void getAngleByGyro(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu, double *roll,double *pitch, double *yaw){
+    float gyro_val[3];
+    readScaledGyroVal(hi2c,hmpu,gyro_val);
+    hmpu->time.previousTime = hmpu->time.currentTime;
+    hmpu->time.currentTime = HAL_GetTick();
+    hmpu->time.elapsedTime = (hmpu->time.currentTime-hmpu->time.previousTime)/1000;
+
+    *roll = *roll+gyro_val[0]*hmpu->time.elapsedTime;
+    *pitch = *pitch +gyro_val[1]*hmpu->time.elapsedTime;
+    *yaw = *yaw+gyro_val[2]*hmpu->time.elapsedTime;
+}
+void getAngleByFilter(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu,double *roll , double *pitch, double *yaw){
+    double accler_roll,accler_pitch,gyro_roll,gyro_pitch,gyro_yaw;
+    getAngleByAccler(hi2c,hmpu,&accler_roll, &accler_pitch);
+    getAngleByGyro(hi2c,hmpu,&gyro_roll, &gyro_pitch, &gyro_pitch);
+    *roll = 0.5*gyro_roll+0.5*accler_roll;
+    *pitch = 0.5*gyro_pitch+0.5*accler_pitch;
+    *yaw = gyro_yaw; 
+}
+void calculateImuError(I2C_HandleTypeDef *hi2c, MPUConfigHandle *hmpu){
+    hmpu->AccErrorX = 0;
+	hmpu->AccErrorY = 0;
+	hmpu->GyroErrorX = 0;
+	hmpu->GyroErrorY = 0;
+	hmpu->GyroErrorZ = 0;
+    int c =0;
+    while (c<200)
+    {
+        uint16_t accler_val[3];
+        int16_t accx,accy,accz;
+        readRawAccelVal(hi2c,accler_val);
+        accx = (int16_t) accler_val[0];
+        accy = (int16_t) accler_val[1];
+        accz = (int16_t) accler_val[2];
+        hmpu->AccErrorX = AccErrorX + ((atan((accy) / sqrt(pow((accx), 2) + pow((accz), 2))) * 180 / PI));
+		hmpu->AccErrorY = AccErrorY + ((atan(-1 * (accx) / sqrt(pow((accy), 2) + pow((accz), 2))) * 180 / PI));
+		c++;
+    }
+    c = 0;
+    hmpu->AccErrorX =hmpu->AccErrorX /200;
+    hmpu->AccErrorY =hmpu->AccErrorY /200;
+
+    while (c<200)
+    {
+        float gyro_val[3];
+        readScaledGyroVal(hi2c,hmpu,gyro_val);
+        hmpu->GyroErrorX = hmpu->GyroErrorX + (gyro_val[0] / 131.0);
+		hmpu->GyroErrorY = hmpu->GyroErrorY + (gyro_val[1] / 131.0);
+		hmpu->GyroErrorZ = hmpu->GyroErrorZ + (gyro_val[2] / 131.0);
+    }
+    hmpu->GyroErrorX = hmpu->GyroErrorX/200;
+	hmpu->GyroErrorY = hmpu->GyroErrorY/200;
+	hmpu->GyroErrorZ = hmpu->GyroErrorZ/200;
 }
 
 #endif
